@@ -1,0 +1,41 @@
+provider "aws" {
+  region = "us-east-1"
+}
+
+# VPC
+resource "aws_vpc" "td_vpc" {
+  cidr_block = "10.0.0.0/16"
+}
+
+# EC2 INSTANCE
+resource "aws_instance" "td_vm" {
+  ami           = "ami-0dc2d3e4c0f9ebd18"
+  instance_type = "t2.micro"
+  subnet_id     = aws_vpc.td_vpc.id
+  associate_public_ip_address = true
+}
+
+# Base de donné
+resource "aws_db_instance" "td_db" {
+  identifier          = "td-db"
+  engine              = "postgres"
+  engine_version      = "16.0"
+  instance_class      = "db.t3.micro"
+  allocated_storage   = 20
+  username            = "admin"
+  password            = "Admin12345!"
+  skip_final_snapshot = true
+  publicly_accessible = true
+}
+
+resource "aws_route53_zone" "kiowy_zone" {
+  name = "kiowy.com"
+}
+
+resource "aws_route53_record" "td_dns_record" {
+  zone_id = aws_route53_zone.kiowy_zone.zone_id
+  name    = "www.${aws_route53_zone.kiowy_zone.name}"
+  type    = "A"
+  ttl     = 300
+  records = [aws_instance.td_vm.public_ip]
+}
