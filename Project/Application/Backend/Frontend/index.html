@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculatrice Cloud Pro</title>
+    <style>
+        :root { --primary: #4f46e5; --primary-hover: #4338ca; --bg: #f8fafc; --card: #ffffff; --text: #1e293b; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg); color: var(--text); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .container { background: var(--card); padding: 2.5rem; border-radius: 1rem; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); width: 100%; max-width: 400px; }
+        h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 1.5rem; text-align: center; color: var(--primary); }
+        .form-group { margin-bottom: 1rem; }
+        label { display: block; font-size: 0.875rem; font-weight: 500; margin-bottom: 0.25rem; }
+        input, select { width: 100%; padding: 0.75rem; border: 1px solid #e2e8f0; border-radius: 0.5rem; font-size: 1rem; transition: border-color 0.2s; box-sizing: border-box; }
+        input:focus, select:focus { outline: none; border-color: var(--primary); ring: 2px var(--primary); }
+        button { width: 100%; background-color: var(--primary); color: white; border: none; padding: 0.75rem; border-radius: 0.5rem; font-size: 1rem; font-weight: 600; cursor: pointer; transition: background-color 0.2s; margin-top: 1rem; }
+        button:hover { background-color: var(--primary-hover); }
+        .result-area { margin-top: 1.5rem; padding: 1rem; border-radius: 0.5rem; background-color: #f1f5f9; min-height: 3rem; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+        .result-value { font-size: 1.25rem; font-weight: 700; color: var(--primary); }
+        .result-id { font-size: 0.75rem; color: #64748b; margin-top: 0.5rem; word-break: break-all; }
+        .badge { display: inline-block; padding: 0.25rem 0.5rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; background-color: #dcfce7; color: #166534; margin-bottom: 0.5rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>☁️ Cloud Calculator</h1>
+        <div class="form-group">
+            <label for="op1">Premier Nombre</label>
+            <input type="number" id="op1" placeholder="0">
+        </div>
+        <div class="form-group">
+            <label for="operation">Opération</label>
+            <select id="operation">
+                <option value="addition">Addition (+)</option>
+                <option value="soustraction">Soustraction (-)</option>
+                <option value="multiplication">Multiplication (×)</option>
+                <option value="division">Division (÷)</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="op2">Deuxième Nombre</label>
+            <input type="number" id="op2" placeholder="0">
+        </div>
+        <button onclick="calculate()">Calculer</button>
+        
+        <div class="result-area" id="result-area">
+            <div id="status-text">Prêt pour le calcul</div>
+        </div>
+    </div>
+
+    <script>
+        async function calculate() {
+            const op1 = document.getElementById('op1').value;
+            const op2 = document.getElementById('op2').value;
+            const operation = document.getElementById('operation').value;
+            const resultArea = document.getElementById('result-area');
+            
+            if (op1 === '' || op2 === '') {
+                resultArea.innerHTML = '<div style="color: #ef4444">Veuillez remplir tous les champs</div>';
+                return;
+            }
+
+            resultArea.innerHTML = '<div>Calcul en cours...</div>';
+
+            try {
+                const response = await fetch('/api/calculate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        operand1: parseFloat(op1), 
+                        operand2: parseFloat(op2),
+                        operation: operation
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultArea.innerHTML = `
+                        <span class="badge">Calcul Réussi</span>
+                        <div class="result-value">${data.result}</div>
+                        <div class="result-id">ID: ${data.id}</div>
+                        <button onclick="verifyResult('${data.id}')" style="margin-top: 0.5rem; padding: 0.4rem; font-size: 0.8rem; background: #64748b;">Vérifier via GET</button>
+                    `;
+                } else {
+                    resultArea.innerHTML = `<div style="color: #ef4444">${data.error}</div>`;
+                }
+            } catch (e) {
+                resultArea.innerHTML = '<div style="color: #ef4444">Erreur de connexion au Backend</div>';
+            }
+        }
+
+        async function verifyResult(id) {
+            const resultArea = document.getElementById('result-area');
+            try {
+                const response = await fetch(`/api/result/${id}`);
+                const data = await response.json();
+                if (response.ok) {
+                    alert(`Vérification GET réussie !\nOpération: ${data.operation}\nRésultat: ${data.result}`);
+                } else {
+                    alert("Erreur lors de la vérification");
+                }
+            } catch (e) {
+                alert("Erreur de connexion");
+            }
+        }
+    </script>
+</body>
+</html>
