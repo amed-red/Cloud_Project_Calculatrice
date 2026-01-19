@@ -103,3 +103,63 @@ resource "aws_route_table_association" "b" {
 resource "aws_ecr_repository" "app" {
   name = "repo-examen"
 }
+
+
+############################################
+# 9. Rôle IAM pour EKS
+############################################
+# Rôle que le service EKS va assumer
+# pour gérer les ressources AWS
+resource "aws_iam_role" "eks_role" {
+  name = "eks-cluster-role-examen"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action    = "sts:AssumeRole"
+      Effect    = "Allow"
+      Principal = {
+        Service = "eks.amazonaws.com"
+      }
+    }]
+  })
+}
+
+############################################
+# 10. Attachement des policies IAM nécessaires
+############################################
+# Autorise EKS à créer et gérer le cluster
+resource "aws_iam_role_policy_attachment" "eks_cluster_policy" {
+  role       = aws_iam_role.eks_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
+}
+
+# Autorise EKS à gérer les ressources réseau du VPC
+resource "aws_iam_role_policy_attachment" "eks_vpc_controller" {
+  role       = aws_iam_role.eks_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSVPCResourceController"
+}
+
+############################################
+# 11. Création du cluster EKS
+############################################
+# Création du control plane Kubernetes
+# Le cluster est déployé dans les deux subnets
+resource "aws_eks_cluster" "main" {
+  name      = "cluster-examen"
+  role_arn = aws_iam_role.eks_role.arn
+
+  vpc_config {
+    subnet_ids = [
+      aws_subnet.public_a.id,
+      aws_subnet.public_b.id
+    ]
+  }
+
+  # Garantit que les policies IAM sont bien attachées
+  # avant la création du cluster
+  depends_on = [
+    aws_iam_role_policy_attachment.eks_cluster_policy,
+    aws_iam_role_policy_attachment.eks_vpc_controller
+  ]
+}
