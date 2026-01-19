@@ -80,3 +80,26 @@ resource "aws_subnet" "public_b" {
     Name = "subnet-examen-b"
   }
 }
+
+############################################
+# 7. Association des subnets à la table de routage
+############################################
+# Permet aux subnets d’utiliser la route vers Internet
+resource "aws_route_table_association" "a" {
+  subnet_id      = aws_subnet.public_a.id
+  route_table_id = aws_route_table.rt.id
+}
+
+resource "aws_route_table_association" "b" {
+  subnet_id      = aws_subnet.public_b.id
+  route_table_id = aws_route_table.rt.id
+}
+
+############################################
+# 8. Elastic Container Registry (ECR)
+############################################
+# Registre Docker privé pour stocker les images
+# qui seront utilisées par le cluster EKS
+resource "aws_ecr_repository" "app" {
+  name = "repo-examen"
+}
