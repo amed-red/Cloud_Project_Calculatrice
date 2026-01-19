@@ -47,3 +47,36 @@ resource "aws_route_table" "rt" {
     gateway_id = aws_internet_gateway.gw.id
   }
 }
+
+############################################
+# 5. Subnet publique A
+############################################
+# Sous-réseau public dans la zone eu-west-3a
+# map_public_ip_on_launch permet d’attribuer
+# automatiquement une IP publique aux ressources
+resource "aws_subnet" "public_a" {
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = "10.0.1.0/24"
+  availability_zone       = "eu-west-3a"
+  map_public_ip_on_launch = true
+
+  tags = {
+    Name = "subnet-examen-a"
+  }
+}
+
+############################################
+# 6. Subnet publique B
+############################################
+# Deuxième sous-réseau dans une autre zone
+# (recommandé pour la haute disponibilité EKS)
+resource "aws_subnet" "public_b" {
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = "10.0.2.0/24"
+  availability_zone       = "eu-west-3b"
+  map_public_ip_on_launch = true
+
+  tags = {
+    Name = "subnet-examen-b"
+  }
+}
